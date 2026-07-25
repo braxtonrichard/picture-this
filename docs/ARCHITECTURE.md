@@ -163,5 +163,26 @@ stub:
   does not persist queries offline the way Firestore does automatically —
   a deliberately-designed offline-first experience (local cache, optimistic
   UI while offline) is not built.
-- **Native platform folders** (`android/`, `ios/`, `web/`) — see
-  `docs/SETUP.md`.
+- **Native platform folders** (`android/`, `ios/`) — see `docs/SETUP.md`.
+  (`web/` is committed, unlike the native folders — see "Web + Vercel"
+  below.)
+
+## Web + Vercel
+
+`flutter create . --platforms=web` was run once to generate `web/`, and
+its `index.html`/`manifest.json` were hand-edited with the app's real
+name/description/theme colors — unlike `android/`/`ios/`, this folder
+needs to exist in the repo for Vercel's build to have something to build.
+
+`vercel.json` points Vercel at `scripts/vercel_build.sh`, which downloads
+a pinned Flutter SDK (Vercel's build image doesn't have one), runs
+`flutter pub get`, writes `.env` from Vercel's Environment Variables
+(there's no committed `.env` — same secret-handling pattern as local
+dev, just sourced from Vercel instead of a file you create by hand), and
+runs `flutter build web --release`. Output directory is `build/web`.
+Full walkthrough: `docs/SETUP.md` step 7.
+
+Google sign-in's web behavior isn't verified — the `google_sign_in`
+plugin's web implementation differs from native iOS/Android, and this
+pass hasn't tested it in a browser. Email/password auth works on web
+without any extra setup.

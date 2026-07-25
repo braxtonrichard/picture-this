@@ -8,11 +8,13 @@
 build/
 *.g.dart.bak
 
-# Platform folders are generated locally via `flutter create .`
-# (see docs/SETUP.md) and intentionally not committed yet.
+# Native platform folders are generated locally via `flutter create .`
+# (see docs/SETUP.md) and intentionally not committed.
+# /web/ IS committed — its index.html/manifest.json are hand-customized
+# (see web/index.html, web/manifest.json) and Vercel's build needs it
+# present in the repo to run `flutter build web` against.
 /android/
 /ios/
-/web/
 /macos/
 /linux/
 /windows/

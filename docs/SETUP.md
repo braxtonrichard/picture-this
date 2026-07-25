@@ -7,8 +7,11 @@ runs.
 
 ## 1. Generate the native platform folders
 
-`android/`, `ios/`, and `web/` are intentionally not committed — they're
-large, toolchain-generated, and version-specific. Generate them in place:
+`android/` and `ios/` are intentionally not committed — they're large,
+toolchain-generated, and version-specific. (`web/` **is** committed —
+its `index.html`/`manifest.json` are hand-customized with the app's
+branding, and Vercel's build needs it present in the repo. See "Deploying
+the web build to Vercel" below.) Generate the native folders in place:
 
 ```bash
 flutter create . --org com.pictureThis --project-name picture_this
@@ -118,3 +121,38 @@ flutter run
 ```
 
 Pick a simulator/device when prompted.
+
+## 7. Deploying the web build to Vercel
+
+Flutter also compiles to a static web app from this same codebase.
+`vercel.json` + `scripts/vercel_build.sh` handle it — Vercel's build
+image doesn't have Flutter installed, so the script downloads a pinned
+SDK build, then runs `flutter pub get` and `flutter build web --release`.
+
+1. [vercel.com](https://vercel.com) → **Add New Project** → import the
+   `picture-this` GitHub repo. Vercel will read `vercel.json`
+   automatically (build command, output directory) — no framework preset
+   to pick.
+2. Project Settings → **Environment Variables** → add:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `GOOGLE_WEB_CLIENT_ID` (optional, only if you did the Google sign-in
+     setup above)
+
+   These get written into a `.env` file *during the build* (see
+   `scripts/vercel_build.sh`) — the same file `flutter_dotenv` reads
+   locally, just generated instead of committed. The anon key is safe to
+   ship in a public web bundle; it's the same key your Flutter app already
+   embeds, and every table it can reach is protected by the RLS policies
+   in `supabase/migrations/0001_init.sql`.
+3. Deploy. First build takes a few minutes (downloading the Flutter SDK
+   fresh); redeploys are faster if Vercel's build cache picks up
+   `~/flutter` between runs.
+4. In Supabase → Authentication → URL Configuration, add your Vercel
+   deployment URL to **Site URL** / **Redirect URLs** — needed for Google
+   OAuth redirects to come back to the right place if you set that up.
+
+Google sign-in specifically may need extra web-specific configuration
+beyond what's documented above (the `google_sign_in` plugin's web
+implementation differs from its native iOS/Android one) — email/password
+auth works on web without any of that.

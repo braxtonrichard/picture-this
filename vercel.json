@@ -1,0 +1,5 @@
+{
+  "buildCommand": "bash scripts/vercel_build.sh",
+  "outputDirectory": "build/web",
+  "installCommand": "echo 'no npm install needed — scripts/vercel_build.sh handles Flutter deps'"
+}
