@@ -1,8 +1,8 @@
 # Setup
 
 This scaffold was written by hand (the sandbox that generated it doesn't
-have the Flutter SDK installed), so two things you'd normally get for free
-from `flutter create` still need to happen on your own machine before it
+have the Flutter SDK installed), so one thing you'd normally get for free
+from `flutter create` still needs to happen on your own machine before it
 runs.
 
 ## 1. Generate the native platform folders
@@ -14,12 +14,9 @@ large, toolchain-generated, and version-specific. Generate them in place:
 flutter create . --org com.pictureThis --project-name picture_this
 ```
 
-Run this from the repo root. It only adds the platform folders and a few
-top-level files (`analysis_options.yaml`, `pubspec.yaml`, etc.) —
-answer "yes" if it asks to overwrite `analysis_options.yaml`/`pubspec.yaml`
-only if you want Flutter's defaults; otherwise skip those two and keep
-the ones already in the repo, since they're already configured for this
-project (lint rules, dependencies).
+If it asks to overwrite `pubspec.yaml` or `analysis_options.yaml`, say
+**no** — those are already configured for this project (dependencies,
+lint rules).
 
 Then:
 
@@ -27,81 +24,97 @@ Then:
 flutter pub get
 ```
 
-## 2. Create a Firebase project
+## 2. Create a Supabase project
 
-1. Go to the [Firebase console](https://console.firebase.google.com) and
-   create a new project (e.g. "Picture This").
-2. Enable **Authentication** → Sign-in providers: **Email/Password** and
-   **Google**. (Apple Sign-In needs an Apple Developer account — see
-   `docs/ARCHITECTURE.md`'s "Not built yet" for why it's not wired up
-   yet.)
-3. Create a **Firestore** database (start in production mode, then apply
-   the security rules from `docs/ARCHITECTURE.md`).
-4. Enable **Storage** (default rules are fine to start; user-uploaded
-   photos aren't wired into the UI yet in this pass).
+1. Go to [supabase.com](https://supabase.com) and create a new project.
+2. **SQL Editor** → paste and run `supabase/migrations/0001_init.sql`.
+   This creates `profiles`, `vibes`, `recommendations`, `experiences`,
+   `reflections` — all with Row Level Security enabled and policies
+   scoping user data to `auth.uid()` — plus the `handle_new_user` trigger
+   and `submit_reflection` function. (If you use the Supabase CLI instead,
+   `supabase db push` works the same way.)
+3. **Authentication → Providers** → enable **Email** and **Google**.
+   - For Google, see step 4 below — it needs one extra piece of config
+     beyond just flipping the provider on.
+   - Apple Sign-In isn't wired into the app yet (see
+     `docs/ARCHITECTURE.md`), so skip it for now.
+4. **Important for testing right away:** Authentication → Sign In / Providers
+   (or Auth settings, depending on your Supabase dashboard version) →
+   turn **off** "Confirm email". With it on, a new sign-up won't have an
+   active session until the user clicks a confirmation link, and this
+   pass doesn't have a verify-email screen yet — sign-up will look like it
+   silently failed. Turn it back on (and build a verify screen) before
+   shipping to real users.
 
-## 3. Connect the Flutter app to Firebase
+## 3. Google sign-in setup
 
-Install the FlutterFire CLI once, globally:
+The app uses Google's native sign-in SDK and exchanges the resulting ID
+token for a Supabase session (`signInWithIdToken`) — this needs one OAuth
+**Web** client shared between Google Cloud and Supabase:
 
-```bash
-dart pub global activate flutterfire_cli
-```
+1. [Google Cloud Console](https://console.cloud.google.com) → APIs &
+   Services → Credentials → create an **OAuth 2.0 Client ID** of type
+   **Web application** (even though the app is mobile — this is the
+   client ID Supabase verifies the ID token against).
+2. Copy that Web client ID into:
+   - Supabase Dashboard → Authentication → Providers → Google → **Client
+     IDs** field.
+   - `GOOGLE_WEB_CLIENT_ID` in your `.env` (step 5 below).
+3. You'll also need a separate Android/iOS OAuth client ID per platform
+   for `google_sign_in` itself to work natively — see the
+   [google_sign_in package docs](https://pub.dev/packages/google_sign_in)
+   for the platform-specific setup (SHA-1 fingerprint for Android,
+   URL scheme for iOS).
 
-Then, from the repo root:
-
-```bash
-flutterfire configure
-```
-
-Pick the Firebase project you just created, and the platforms you want
-(iOS/Android/Web). This generates the real `lib/firebase_options.dart`
-(gitignored — it's project-specific) and the platform config files
-(`google-services.json` / `GoogleService-Info.plist`, also gitignored).
-`lib/firebase_options.example.dart` shows the shape of the generated file
-if you want to sanity-check it.
+This is genuinely the fiddliest part of setup. Skipping it is fine —
+email/password sign-up still works without it.
 
 ## 4. Seed some content
 
-Discover and the onboarding vibe picker read from the `vibes` and
-`recommendations` Firestore collections, which start empty. Add a few
-documents by hand in the Firestore console to see the app populated — the
-exact field shape is documented in `docs/ARCHITECTURE.md`'s "Data model"
-section. A minimal vibe:
+Discover and the onboarding vibe picker read from the empty `vibes` and
+`recommendations` tables. Add a few rows via the Supabase dashboard's
+Table Editor, or the SQL editor:
 
-```json
-// vibes/{autoId}
-{
-  "name": "Coastal Grandmother",
-  "description": "Linen, salt air, an afternoon that has nowhere to be.",
-  "coverImageUrl": "https://images.unsplash.com/photo-...",
-  "tags": ["coastal", "relaxed", "neutral-tones"]
-}
+```sql
+insert into public.vibes (name, description, cover_image_url, tags)
+values (
+  'Coastal Grandmother',
+  'Linen, salt air, an afternoon that has nowhere to be.',
+  'https://images.unsplash.com/photo-...',
+  array['coastal', 'relaxed', 'neutral-tones']
+);
+
+insert into public.recommendations (title, category, image_url, description, vibe_ids)
+values (
+  'Big Little Lies',
+  'tvShow',
+  'https://images.unsplash.com/photo-...',
+  'Coastal drama with exactly the right amount of linen.',
+  array[(select id from public.vibes where name = 'Coastal Grandmother')]
+);
 ```
 
-```json
-// recommendations/{autoId}
-{
-  "title": "Big Little Lies",
-  "category": "tvShow",
-  "imageUrl": "https://images.unsplash.com/photo-...",
-  "description": "Coastal drama with exactly the right amount of linen.",
-  "vibeIds": ["<the vibe doc id above>"]
-}
+## 5. Configure the app's environment
+
+Copy the example env file and fill in your project's URL and key
+(Supabase Dashboard → Project Settings → API):
+
+```bash
+cp .env.example .env
 ```
 
-## 5. Run it
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-or-publishable-key
+GOOGLE_WEB_CLIENT_ID=your-google-oauth-web-client-id   # optional, see step 3
+```
+
+`.env` is gitignored — never commit real credentials.
+
+## 6. Run it
 
 ```bash
 flutter run
 ```
 
-## Google Sign-In extra step
-
-`google_sign_in` needs the OAuth client from the Firebase console's
-Authentication → Sign-in method → Google provider (Firebase sets this up
-for you when you enable the provider) — no extra manual OAuth console work
-needed for Android/iOS. For web, you'll additionally need the web client
-ID in `web/index.html` per the
-[google_sign_in web setup docs](https://pub.dev/packages/google_sign_in)
-if you build for web.
+Pick a simulator/device when prompted.

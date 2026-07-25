@@ -47,18 +47,18 @@ class PictureCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 placeholder: (BuildContext context, String url) =>
                     Shimmer.fromColors(
-                      baseColor: colors.surfaceMuted,
-                      highlightColor: colors.surface,
-                      child: Container(color: colors.surfaceMuted),
-                    ),
+                  baseColor: colors.surfaceMuted,
+                  highlightColor: colors.surface,
+                  child: Container(color: colors.surfaceMuted),
+                ),
                 errorWidget: (BuildContext context, String url, Object err) =>
                     Container(
-                      color: colors.surfaceMuted,
-                      child: Icon(
-                        Icons.image_outlined,
-                        color: colors.textSecondary,
-                      ),
-                    ),
+                  color: colors.surfaceMuted,
+                  child: Icon(
+                    Icons.image_outlined,
+                    color: colors.textSecondary,
+                  ),
+                ),
               ),
               Positioned.fill(
                 child: DecoratedBox(
@@ -98,8 +98,8 @@ class PictureCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.85),
-                        ),
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
                       ),
                     ],
                   ],

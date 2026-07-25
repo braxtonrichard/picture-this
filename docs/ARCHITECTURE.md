@@ -10,17 +10,16 @@ oversights; see "Not built yet" at the bottom.
 
 ```
 lib/
-  main.dart              — Firebase init, runApp
+  main.dart              — loads .env, initializes Supabase, runApp
   app.dart                — MaterialApp.router, theme wiring
-  firebase_options.example.dart  — template; real file is gitignored
   core/
     theme/                — colors, typography, spacing, ThemeData
     router/                — the single GoRouter (auth-aware redirects)
     widgets/                — shared design-system widgets
     models/                — plain Dart data classes (Vibe, Recommendation,
                               Experience, Reflection, UserProfile)
-    services/                — AuthService, FirestoreService — the only
-                                code that talks to Firebase directly
+    services/                — AuthService, SupabaseService — the only
+                                code that talks to Supabase directly
   features/
     auth/                  — welcome, sign in, sign up
     onboarding/                — first-vibe picker
@@ -30,24 +29,28 @@ lib/
     experience/                — logging + listing experiments (Pillar 2)
     reflect/                — the reflection form (Pillar 3)
     profile/                — the "fun profile" + sign out
+supabase/
+  migrations/                — SQL migrations, same convention as the
+                                other project (numbered, RLS from the start)
 ```
 
 Each feature follows `domain/` (models specific to that feature, if any)
-/ `data/` (Riverpod providers wrapping `FirestoreService`) /
-`presentation/` (screens). Screens never call Firestore directly — they
-watch a provider, which calls `FirestoreService`. This is the one seam
+/ `data/` (Riverpod providers wrapping `SupabaseService`) /
+`presentation/` (screens). Screens never call Supabase directly — they
+watch a provider, which calls `SupabaseService`. This is the one seam
 Pillar 4 (the learning engine) will plug into later: reflections already
-flow through `FirestoreService.submitReflection`, so a recommendation
-engine can be added as a Cloud Function or a new service without touching
-any screen.
+flow through `SupabaseService.submitReflection` (a Postgres RPC), so a
+recommendation engine can be added as a database function or an edge
+function without touching any screen.
 
 ## State management
 
 [Riverpod](https://riverpod.dev) (`flutter_riverpod`), classic (non
-code-generated) API. Firestore streams are exposed as `StreamProvider`s
-per feature (see `*_providers.dart` under each feature's `data/`
-folder) — screens just do `ref.watch(someStreamProvider)` and get an
-`AsyncValue` to pattern-match with `.when(...)`.
+code-generated) API. Supabase's realtime queries are exposed as
+`StreamProvider`s per feature (see `*_providers.dart` under each
+feature's `data/` folder) — screens just do
+`ref.watch(someStreamProvider)` and get an `AsyncValue` to pattern-match
+with `.when(...)`.
 
 ## Navigation
 
@@ -56,65 +59,58 @@ folder) — screens just do `ref.watch(someStreamProvider)` and get an
 redirects unauthenticated users to `/welcome` and authenticated users away
 from the auth routes — no screen re-checks auth itself.
 
-## Data model (Firestore)
+## Data model (Postgres / Supabase)
+
+Full schema with types, constraints, indexes, and RLS policies is in
+`supabase/migrations/0001_init.sql`. Summary:
 
 ```
-users/{uid}
-  displayName, email, photoUrl
-  favoriteVibeIds: string[]
-  answers: { [questionId]: string }        — the "fun profile"
+profiles                          (id = auth.users.id, RLS: own row only)
+  email, display_name, photo_url
+  favorite_vibe_ids: uuid[]
+  answers: jsonb                  — the "fun profile"
 
-  users/{uid}/experiences/{experienceId}
-    recommendationId, recommendationTitle, recommendationImageUrl
-    status: planned | experienced | reflected
-    createdAt, experiencedAt
+experiences                       (RLS: own rows only, via user_id)
+  user_id, recommendation_id
+  recommendation_title, recommendation_image_url   — denormalized
+  status: planned | experienced | reflected
+  created_at, experienced_at
 
-  users/{uid}/reflections/{reflectionId}
-    experienceId
-    rating: love | like | neutral | dislike | neverAgain
-    wouldRepeat, matchedVibe: bool
-    moodBefore, moodAfter: int (1-5)
-    journalEntry: string?
-    createdAt
+reflections                       (RLS: own rows only, via user_id)
+  user_id, experience_id
+  rating: love | like | neutral | dislike | neverAgain
+  would_repeat, matched_vibe: boolean
+  mood_before, mood_after: smallint (1-5)
+  journal_entry: text?
+  created_at
 
-vibes/{vibeId}
-  name, description, coverImageUrl, tags: string[]
+vibes                              (RLS: read-only for authenticated users)
+  name, description, cover_image_url, tags: text[]
 
-recommendations/{recommendationId}
-  title, category (see RecommendationCategory enum), imageUrl,
-  description, vibeIds: string[], location?
+recommendations                    (RLS: read-only for authenticated users)
+  title, category (see RecommendationCategory enum), image_url,
+  description, vibe_ids: uuid[], location?
 ```
 
-`vibes` and `recommendations` are shared/global collections — there's no
-authoring UI for them yet, so seed them directly in the Firestore console
-(or via a script) to populate Discover and the vibe picker. Every
-`recommendations` doc needs `vibeIds` to show up filtered on a vibe page.
+A `handle_new_user` trigger creates the `profiles` row automatically when
+someone signs up (mirrors `auth.users`), so `AuthService` never writes to
+`profiles` directly on sign-up.
 
-`users/{uid}/experiences` and `.../reflections` are per-user subcollections
-so Firestore security rules can scope everything to `request.auth.uid ==
-uid` in one rule.
+`vibes` and `recommendations` are shared/global tables — there's no
+authoring UI for them yet, so seed rows directly via the Supabase
+dashboard's Table Editor or SQL editor (or a script) to populate Discover
+and the vibe picker. Every `recommendations` row needs `vibe_ids` to show
+up filtered on a vibe page.
 
-### Suggested security rules (write these before shipping any real data)
+Row Level Security is enabled on every table from the start, same
+convention as the other project: `profiles`/`experiences`/`reflections`
+are scoped to `auth.uid()`, `vibes`/`recommendations` are read-only
+reference data.
 
-```
-match /users/{uid} {
-  allow read, write: if request.auth.uid == uid;
-  match /experiences/{id} {
-    allow read, write: if request.auth.uid == uid;
-  }
-  match /reflections/{id} {
-    allow read, write: if request.auth.uid == uid;
-  }
-}
-match /vibes/{id} {
-  allow read: if request.auth != null;
-  allow write: if false; // author these server-side/via console for now
-}
-match /recommendations/{id} {
-  allow read: if request.auth != null;
-  allow write: if false;
-}
-```
+Reflection submission goes through a `submit_reflection` Postgres
+function (also in the migration) instead of two separate client calls, so
+the reflection insert and the experience's status flip to `'reflected'`
+happen in one transaction.
 
 ## Visual system
 
@@ -153,13 +149,19 @@ stub:
   adventurous"), **AI memory**.
 - **Community** (sharing, following, voting on others' content), **Maps**,
   **Timeline/"searchable life"**, **Collections**.
-- **Apple Sign-In** — `sign_in_with_apple` is in `pubspec.yaml` but not
-  wired into `AuthService` yet; it needs an Apple Developer account and
-  capability configuration this environment can't do.
-- **Offline sync beyond Firestore's own built-in offline cache.**
-  `cloud_firestore` persists reads/writes locally and syncs automatically
-  on reconnect by default on iOS/Android — no extra package needed for
-  that baseline. A deliberately-designed offline-first experience (e.g.
-  optimistic UI for logging an experience while offline) is not built.
+- **Apple Sign-In** — not wired into `AuthService` yet; it needs an Apple
+  Developer account and capability configuration this environment can't
+  do. Supabase supports it as an OAuth provider once that exists.
+- **Email confirmation UI.** If your Supabase project has "Confirm email"
+  enabled (the default), a new sign-up won't have an active session until
+  the user clicks the confirmation link, but there's no in-app screen for
+  that yet (unlike the other project's `/verify` OTP flow) — the app will
+  just look like sign-up silently did nothing. Simplest fix for now:
+  disable "Confirm email" in Supabase Auth settings while building; add a
+  verify screen before shipping.
+- **Offline sync beyond Supabase's own local cache.** `supabase_flutter`
+  does not persist queries offline the way Firestore does automatically —
+  a deliberately-designed offline-first experience (local cache, optimistic
+  UI while offline) is not built.
 - **Native platform folders** (`android/`, `ios/`, `web/`) — see
   `docs/SETUP.md`.

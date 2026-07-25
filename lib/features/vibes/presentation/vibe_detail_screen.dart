@@ -114,11 +114,11 @@ class VibeDetailScreen extends ConsumerWidget {
                   sliver: SliverGrid(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: AppSpacing.md,
-                          crossAxisSpacing: AppSpacing.md,
-                          childAspectRatio: 0.85,
-                        ),
+                      crossAxisCount: 2,
+                      mainAxisSpacing: AppSpacing.md,
+                      crossAxisSpacing: AppSpacing.md,
+                      childAspectRatio: 0.85,
+                    ),
                     delegate: SliverChildBuilderDelegate((
                       BuildContext context,
                       int i,

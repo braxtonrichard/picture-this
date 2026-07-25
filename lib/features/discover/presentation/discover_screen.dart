@@ -97,9 +97,8 @@ class DiscoverScreen extends ConsumerWidget {
                     child: EmptyState(
                       icon: Icons.auto_awesome_outlined,
                       title: 'Nothing to discover yet',
-                      message:
-                          'Seed the "recommendations" collection in '
-                          'Firestore to populate this feed — see '
+                      message: 'Seed the "recommendations" table in '
+                          'Supabase to populate this feed — see '
                           'docs/ARCHITECTURE.md.',
                     ),
                   );

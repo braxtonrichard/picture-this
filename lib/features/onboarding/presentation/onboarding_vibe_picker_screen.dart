@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/models/vibe.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/services/firestore_service.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/pt_button.dart';
 import '../../../core/widgets/vibe_chip.dart';
@@ -27,11 +27,11 @@ class _OnboardingVibePickerScreenState
   bool _saving = false;
 
   Future<void> _finish() async {
-    final String? uid = ref.read(authStateProvider).valueOrNull?.uid;
+    final String? uid = ref.read(authStateProvider).valueOrNull?.id;
     if (uid == null) return;
     setState(() => _saving = true);
     await ref
-        .read(firestoreServiceProvider)
+        .read(supabaseServiceProvider)
         .setFavoriteVibes(uid, _selected.toList());
     if (mounted) context.go('/');
   }
@@ -108,8 +108,8 @@ class _NoVibesYet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        "No vibes seeded yet — add some to the 'vibes' collection in "
-        'Firestore to populate this screen. See docs/ARCHITECTURE.md.',
+        "No vibes seeded yet — add some to the 'vibes' table in "
+        'Supabase to populate this screen. See docs/ARCHITECTURE.md.',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.bodyMedium,
       ),

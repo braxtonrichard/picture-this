@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/models/experience.dart';
 import '../../../core/models/reflection.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/services/firestore_service.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/pt_button.dart';
@@ -39,26 +39,21 @@ class _ReflectScreenState extends ConsumerState<ReflectScreen> {
   }
 
   Future<void> _submit() async {
-    final String? uid = ref.read(authStateProvider).valueOrNull?.uid;
+    final String? uid = ref.read(authStateProvider).valueOrNull?.id;
     if (uid == null) return;
 
     setState(() => _saving = true);
-    await ref
-        .read(firestoreServiceProvider)
-        .submitReflection(
+    await ref.read(supabaseServiceProvider).submitReflection(
           uid: uid,
           reflection: Reflection(
-            id: '',
             experienceId: widget.experience.id,
             rating: _rating,
             wouldRepeat: _wouldRepeat,
             matchedVibe: _matchedVibe,
             moodBefore: _moodBefore.round(),
             moodAfter: _moodAfter.round(),
-            journalEntry: _journal.text.trim().isEmpty
-                ? null
-                : _journal.text.trim(),
-            createdAt: DateTime.now(),
+            journalEntry:
+                _journal.text.trim().isEmpty ? null : _journal.text.trim(),
           ),
         );
 
@@ -163,12 +158,12 @@ class _RatingRow extends StatelessWidget {
 
   static const Map<ReflectionRating, String> _emoji =
       <ReflectionRating, String>{
-        ReflectionRating.love: '😍',
-        ReflectionRating.like: '🙂',
-        ReflectionRating.neutral: '😐',
-        ReflectionRating.dislike: '🙁',
-        ReflectionRating.neverAgain: '🚫',
-      };
+    ReflectionRating.love: '😍',
+    ReflectionRating.like: '🙂',
+    ReflectionRating.neutral: '😐',
+    ReflectionRating.dislike: '🙁',
+    ReflectionRating.neverAgain: '🚫',
+  };
 
   @override
   Widget build(BuildContext context) {

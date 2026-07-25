@@ -29,12 +29,12 @@ class WelcomeScreen extends StatelessWidget {
               ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.06, end: 0),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                    'Who do you want to become today?',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                'Who do you want to become today?',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: colors.textSecondary,
                     ),
-                  )
+              )
                   .animate()
                   .fadeIn(delay: 150.ms, duration: 500.ms)
                   .slideY(begin: 0.06, end: 0),

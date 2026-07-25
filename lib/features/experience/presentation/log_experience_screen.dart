@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/models/experience.dart';
 import '../../../core/models/recommendation.dart';
 import '../../../core/services/auth_service.dart';
-import '../../../core/services/firestore_service.dart';
+import '../../../core/services/supabase_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/pt_button.dart';
@@ -28,13 +28,11 @@ class _LogExperienceScreenState extends ConsumerState<LogExperienceScreen> {
   bool _saving = false;
 
   Future<void> _log(ExperienceStatus status) async {
-    final String? uid = ref.read(authStateProvider).valueOrNull?.uid;
+    final String? uid = ref.read(authStateProvider).valueOrNull?.id;
     if (uid == null) return;
 
     setState(() => _saving = true);
-    final String id = await ref
-        .read(firestoreServiceProvider)
-        .logExperience(
+    final String id = await ref.read(supabaseServiceProvider).logExperience(
           uid: uid,
           recommendation: widget.recommendation,
           status: status,
@@ -107,9 +105,8 @@ class _LogExperienceScreenState extends ConsumerState<LogExperienceScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   OutlinedButton(
-                    onPressed: _saving
-                        ? null
-                        : () => _log(ExperienceStatus.planned),
+                    onPressed:
+                        _saving ? null : () => _log(ExperienceStatus.planned),
                     child: const Text('SAVE FOR LATER'),
                   ),
                 ],

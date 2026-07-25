@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/services/auth_service.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -36,16 +36,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       _error = null;
     });
     try {
-      await ref
-          .read(authServiceProvider)
-          .signUpWithEmail(
+      await ref.read(authServiceProvider).signUpWithEmail(
             _email.text.trim(),
             _password.text,
             _name.text.trim(),
           );
       if (mounted) context.go('/onboarding');
-    } on FirebaseAuthException catch (e) {
-      setState(() => _error = e.message ?? 'Something went wrong.');
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -59,8 +57,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     try {
       await ref.read(authServiceProvider).signInWithGoogle();
       if (mounted) context.go('/onboarding');
-    } on FirebaseAuthException catch (e) {
-      setState(() => _error = e.message ?? 'Something went wrong.');
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

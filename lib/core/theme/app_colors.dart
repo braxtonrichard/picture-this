@@ -63,8 +63,7 @@ class AppColors {
   ];
 
   static Color vibeColorFor(String seed) {
-    final int index =
-        seed.codeUnits.fold<int>(0, (int a, int b) => a + b) %
+    final int index = seed.codeUnits.fold<int>(0, (int a, int b) => a + b) %
         vibePalette.length;
     return vibePalette[index];
   }

@@ -3,6 +3,11 @@
 This is the source document the app is built from. Preserved verbatim so
 the product direction stays anchored as the codebase grows.
 
+> **Note:** the Technical Requirements section below names Firebase. The
+> actual implementation uses **Supabase** instead (Postgres + Auth +
+> Storage) — a deliberate deviation made after this doc was written, to
+> match the other project's stack. See `docs/ARCHITECTURE.md`.
+
 ## Founder Vision
 
 Picture This is not another social media app.

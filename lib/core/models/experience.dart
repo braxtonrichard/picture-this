@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 /// Where an experience sits in the core loop: chosen but not yet done,
 /// done and awaiting reflection, or fully reflected on.
 enum ExperienceStatus { planned, experienced, reflected }
@@ -29,31 +27,20 @@ class Experience {
   final DateTime createdAt;
   final DateTime? experiencedAt;
 
-  factory Experience.fromMap(String id, Map<String, dynamic> map) {
+  factory Experience.fromMap(Map<String, dynamic> map) {
     return Experience(
-      id: id,
-      recommendationId: map['recommendationId'] as String? ?? '',
-      recommendationTitle: map['recommendationTitle'] as String? ?? '',
-      recommendationImageUrl: map['recommendationImageUrl'] as String? ?? '',
+      id: map['id'] as String,
+      recommendationId: map['recommendation_id'] as String? ?? '',
+      recommendationTitle: map['recommendation_title'] as String? ?? '',
+      recommendationImageUrl: map['recommendation_image_url'] as String? ?? '',
       status: ExperienceStatus.values.firstWhere(
         (ExperienceStatus s) => s.name == map['status'],
         orElse: () => ExperienceStatus.planned,
       ),
-      createdAt: (map['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
-      experiencedAt: (map['experiencedAt'] as Timestamp?)?.toDate(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'recommendationId': recommendationId,
-      'recommendationTitle': recommendationTitle,
-      'recommendationImageUrl': recommendationImageUrl,
-      'status': status.name,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'experiencedAt': experiencedAt == null
+      createdAt: DateTime.parse(map['created_at'] as String),
+      experiencedAt: map['experienced_at'] == null
           ? null
-          : Timestamp.fromDate(experiencedAt!),
-    };
+          : DateTime.parse(map['experienced_at'] as String),
+    );
   }
 }

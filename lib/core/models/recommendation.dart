@@ -48,31 +48,19 @@ class Recommendation {
   /// Free-text location string (city, address) — used later by Maps.
   final String? location;
 
-  factory Recommendation.fromMap(String id, Map<String, dynamic> map) {
+  factory Recommendation.fromMap(Map<String, dynamic> map) {
     return Recommendation(
-      id: id,
+      id: map['id'] as String,
       title: map['title'] as String? ?? '',
       category: RecommendationCategory.values.firstWhere(
         (RecommendationCategory c) => c.name == map['category'],
         orElse: () => RecommendationCategory.activity,
       ),
-      imageUrl: map['imageUrl'] as String? ?? '',
+      imageUrl: map['image_url'] as String? ?? '',
       description: map['description'] as String? ?? '',
-      vibeIds: List<String>.from(
-        map['vibeIds'] as List<dynamic>? ?? <dynamic>[],
-      ),
+      vibeIds:
+          List<String>.from(map['vibe_ids'] as List<dynamic>? ?? <dynamic>[]),
       location: map['location'] as String?,
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'title': title,
-      'category': category.name,
-      'imageUrl': imageUrl,
-      'description': description,
-      'vibeIds': vibeIds,
-      'location': location,
-    };
   }
 }

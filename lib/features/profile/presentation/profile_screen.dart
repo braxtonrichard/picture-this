@@ -43,9 +43,8 @@ class ProfileScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 40,
                 backgroundColor: colors.surfaceMuted,
-                backgroundImage: p.photoUrl != null
-                    ? NetworkImage(p.photoUrl!)
-                    : null,
+                backgroundImage:
+                    p.photoUrl != null ? NetworkImage(p.photoUrl!) : null,
                 child: p.photoUrl == null
                     ? Text(
                         p.displayName.isNotEmpty

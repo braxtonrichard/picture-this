@@ -32,9 +32,8 @@ class VibeChip extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: selected
-              ? dotColor.withValues(alpha: 0.16)
-              : colors.surfaceMuted,
+          color:
+              selected ? dotColor.withValues(alpha: 0.16) : colors.surfaceMuted,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
             color: selected ? dotColor : Colors.transparent,
@@ -56,8 +55,8 @@ class VibeChip extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: selected ? colors.textPrimary : colors.textSecondary,
-              ),
+                    color: selected ? colors.textPrimary : colors.textSecondary,
+                  ),
             ),
           ],
         ),

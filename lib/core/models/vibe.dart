@@ -17,22 +17,13 @@ class Vibe {
   final String coverImageUrl;
   final List<String> tags;
 
-  factory Vibe.fromMap(String id, Map<String, dynamic> map) {
+  factory Vibe.fromMap(Map<String, dynamic> map) {
     return Vibe(
-      id: id,
+      id: map['id'] as String,
       name: map['name'] as String? ?? '',
       description: map['description'] as String? ?? '',
-      coverImageUrl: map['coverImageUrl'] as String? ?? '',
+      coverImageUrl: map['cover_image_url'] as String? ?? '',
       tags: List<String>.from(map['tags'] as List<dynamic>? ?? <dynamic>[]),
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'name': name,
-      'description': description,
-      'coverImageUrl': coverImageUrl,
-      'tags': tags,
-    };
   }
 }

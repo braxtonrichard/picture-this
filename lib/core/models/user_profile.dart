@@ -20,44 +20,18 @@ class UserProfile {
   final List<String> favoriteVibeIds;
   final Map<String, String> answers;
 
-  factory UserProfile.fromMap(String uid, Map<String, dynamic> map) {
+  factory UserProfile.fromMap(Map<String, dynamic> map) {
     return UserProfile(
-      uid: uid,
-      displayName: map['displayName'] as String? ?? '',
+      uid: map['id'] as String,
+      displayName: map['display_name'] as String? ?? '',
       email: map['email'] as String? ?? '',
-      photoUrl: map['photoUrl'] as String?,
+      photoUrl: map['photo_url'] as String?,
       favoriteVibeIds: List<String>.from(
-        map['favoriteVibeIds'] as List<dynamic>? ?? <dynamic>[],
+        map['favorite_vibe_ids'] as List<dynamic>? ?? <dynamic>[],
       ),
       answers: Map<String, String>.from(
         map['answers'] as Map<dynamic, dynamic>? ?? <dynamic, dynamic>{},
       ),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'displayName': displayName,
-      'email': email,
-      'photoUrl': photoUrl,
-      'favoriteVibeIds': favoriteVibeIds,
-      'answers': answers,
-    };
-  }
-
-  UserProfile copyWith({
-    String? displayName,
-    String? photoUrl,
-    List<String>? favoriteVibeIds,
-    Map<String, String>? answers,
-  }) {
-    return UserProfile(
-      uid: uid,
-      displayName: displayName ?? this.displayName,
-      email: email,
-      photoUrl: photoUrl ?? this.photoUrl,
-      favoriteVibeIds: favoriteVibeIds ?? this.favoriteVibeIds,
-      answers: answers ?? this.answers,
     );
   }
 }
